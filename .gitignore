@@ -1,0 +1,7 @@
+# 依赖与本地文件（提交到 Git 时忽略）
+node_modules/
+tools/
+*.log
+*.exe
+.DS_Store
+Thumbs.db

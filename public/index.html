@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <title>小宝汤汤爱闯关</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🔥</text></svg>" />
+</head>
+<body>
+  <!-- 竖屏提示（手机端请横屏游玩） -->
+  <div id="rotate-overlay">
+    <div class="rotate-icon">📱</div>
+    <p>请把手机<b>横过来</b>游玩<br /><small>横屏体验更棒哦~</small></p>
+  </div>
+
+  <!-- ========== 首页 ========== -->
+  <div class="screen active" id="screen-home">
+    <div class="home-card">
+      <h1 class="logo">🔥 小宝汤汤 <span>爱闯关</span> 💧</h1>
+      <p class="slogan">双人联机 · 心有灵犀 · 一起闯关到终点！</p>
+      <input id="nickname" maxlength="12" placeholder="给自己起个名字（最多 12 字）" autocomplete="off" />
+      <button id="btn-create" class="btn primary big">🏠 创建房间</button>
+      <div class="join-row">
+        <input id="room-code-input" maxlength="4" placeholder="房间号" autocomplete="off" />
+        <button id="btn-join" class="btn primary">🚪 加入房间</button>
+      </div>
+      <p class="tip">创建房间后，把 4 位房间号告诉小伙伴，加入即可一起玩～<br />
+        两人可以在不同地方联机（需要部署到公网，见 README）。</p>
+    </div>
+  </div>
+
+  <!-- ========== 等待房间 ========== -->
+  <div class="screen" id="screen-room">
+    <div class="room-card">
+      <div class="room-head">
+        <div class="room-code-box" id="btn-copy" title="点击复制房间号">
+          <span class="room-code-label">房间号（点击复制）</span>
+          <span class="room-code" id="room-code">----</span>
+        </div>
+      </div>
+      <div class="players-row">
+        <div class="player-card" id="player-card-0">
+          <div class="avatar avatar-fire">🔥</div>
+          <div class="pname" id="player-name-0">等待加入…</div>
+          <div class="prole" id="player-role-0"></div>
+          <div class="ready-tag" id="player-ready-0"></div>
+        </div>
+        <div class="vs">VS</div>
+        <div class="player-card" id="player-card-1">
+          <div class="avatar avatar-water">💧</div>
+          <div class="pname" id="player-name-1">等待加入…</div>
+          <div class="prole" id="player-role-1"></div>
+          <div class="ready-tag" id="player-ready-1"></div>
+        </div>
+      </div>
+      <div class="mode-select host-only" id="mode-select">
+        <span class="mode-label">游戏模式：</span>
+        <button id="mode-dual" class="btn mode-btn">双侠同行<small>各自控制角色配合闯关</small></button>
+        <button id="mode-sync" class="btn mode-btn">心有灵犀<small>一人方向一人跳跃，同步移动</small></button>
+      </div>
+      <p class="mode-desc" id="mode-desc"></p>
+      <div class="duty-row host-only" id="duty-row" style="display:none">
+        <span id="duty-text"></span>
+        <button id="btn-swap" class="btn small">🔄 互换职责</button>
+      </div>
+      <div class="room-actions">
+        <button id="btn-ready" class="btn primary big">我准备好了！</button>
+        <button id="btn-start" class="btn primary big">🚀 开始闯关</button>
+        <button id="btn-pick-room" class="btn">📖 选关开始</button>
+        <button id="btn-leave" class="btn danger">离开房间</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 游戏 ========== -->
+  <div class="screen" id="screen-game">
+    <div id="game-wrap">
+      <canvas id="game-canvas" width="1280" height="720"></canvas>
+
+      <!-- 顶部 HUD -->
+      <div id="hud">
+        <span id="hud-level">第 1 关</span>
+        <span id="hud-time">0.0s</span>
+        <span id="hud-gems">💎 0/0</span>
+        <span id="hud-mode"></span>
+        <span class="hud-spacer"></span>
+        <span id="hud-ping">--</span>
+        <button id="btn-mute" title="音效开关">🔊</button>
+        <button id="btn-exit-game" title="退出">✖</button>
+      </div>
+
+      <!-- 触屏虚拟按键 -->
+      <div class="touch-btn" id="btn-left">◀</div>
+      <div class="touch-btn" id="btn-right">▶</div>
+      <div class="touch-btn jump" id="btn-jump">⬆</div>
+    </div>
+
+    <!-- 结算浮层 -->
+    <div class="overlay" id="overlay-settle">
+      <div class="settle-card">
+        <h2>🎉 闯关成功！</h2>
+        <p class="settle-msg" id="settle-msg"></p>
+        <div class="settle-stats">
+          <div><span id="settle-level"></span><label>关卡</label></div>
+          <div><span id="settle-time"></span><label>用时</label></div>
+          <div><span id="settle-gems"></span><label>宝石</label></div>
+        </div>
+        <p class="settle-tip" id="settle-tip"></p>
+        <p class="settle-count" id="settle-count"></p>
+        <div class="settle-actions">
+          <button id="btn-next" class="btn primary big">下一关 ▶</button>
+          <button id="btn-replay" class="btn">🔁 重玩本关</button>
+          <button id="btn-pick-settle" class="btn">📖 选关</button>
+          <button id="btn-back-room" class="btn danger">回首页</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 选关浮层 -->
+    <div class="overlay" id="overlay-picker">
+      <div class="picker-card">
+        <div class="picker-head">
+          <h3 id="picker-title">选择关卡</h3>
+          <button id="btn-close-picker" class="btn small">✖ 关闭</button>
+        </div>
+        <div id="picker-grid" class="picker-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 全局提示 -->
+  <div id="toast"></div>
+
+  <!-- 依赖：socket.io 客户端由服务端自动提供 -->
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="js/game/constants.js"></script>
+  <script src="js/game/levelGen.js"></script>
+  <script src="js/game/entities.js"></script>
+  <script src="js/game/engine.js"></script>
+  <script src="js/game/renderer.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/input.js"></script>
+  <script src="js/net.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="js/main.js"></script>
+</body>
+</html>

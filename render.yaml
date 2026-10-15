@@ -1,0 +1,12 @@
+# Render 一键部署蓝图（New > Blueprint 时自动识别本文件）
+# 免费套餐即可运行；如需多实例/常驻请升级套餐。
+services:
+  - type: web
+    name: xiaobao-tangtang
+    runtime: node
+    plan: free
+    region: singapore          # 新加坡区域，国内访问延迟更低
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /health
+    autoDeploy: true
