@@ -3,5 +3,6 @@ node_modules/
 tools/
 *.log
 *.exe
+当前游戏网址.txt
 .DS_Store
 Thumbs.db
