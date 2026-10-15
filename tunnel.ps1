@@ -1,14 +1,14 @@
 ﻿# 小宝汤汤爱闯关 - 公网隧道管理器（自动重连 + 双服务轮换 + 网址存档）
 # 用法：由「一键异地联机.bat」调用，一般不需要手动运行。
-# 原理：在本机开一条加密 SSH 隧道，把公网网址转发到本机的 3000 端口游戏服务。
+# 原理：在本机开一条加密 SSH 隧道，把公网网址转发到本机的 3080 端口游戏服务。
 
 $ErrorActionPreference = "Continue"
 [Console]::OutputEncoding = [Text.Encoding]::UTF8
 
 # 两个免费隧道服务轮流使用，一家限流就切另一家
 $providers = @(
-  @{ name = "serveo";        host = "serveo.net";        target = "serveo.net" },
-  @{ name = "localhost.run"; host = "localhost.run";     target = "nokey@localhost.run" }
+  @{ name = "serveo";        target = "serveo.net" },
+  @{ name = "localhost.run"; target = "nokey@localhost.run" }
 )
 
 $urlFile = Join-Path $PSScriptRoot "当前游戏网址.txt"
@@ -21,7 +21,7 @@ while ($true) {
   Write-Host ""
   Write-Host "[隧道] 正在通过 $($p.name) 建立公网通道..." -ForegroundColor Cyan
 
-  $ssh = "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o TCPKeepAlive=yes -R 80:localhost:3000 $($p.target)"
+  $ssh = "ssh -o StrictHostKeyChecking=accept-new -o ServerAliveInterval=30 -o ServerAliveCountMax=3 -o ExitOnForwardFailure=yes -o TCPKeepAlive=yes -R 80:localhost:3080 $($p.target)"
   $urlDone = $false
 
   & cmd /c "$ssh 2>&1" | ForEach-Object {

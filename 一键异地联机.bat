@@ -1,48 +1,48 @@
 @echo off
-chcp 65001 >nul
-title 小宝汤汤爱闯关 - 异地联机（保持此窗口不关）
+title Xiaobao Tangtang - Online Play (Keep Open)
 cd /d %~dp0
 
 echo ==========================================
-echo   小宝汤汤爱闯关 - 异地联机一键启动
+echo   Xiaobao Tangtang - Online Play Launcher
 echo ==========================================
 echo.
 
 where ssh >nul 2>nul
 if errorlevel 1 (
-  echo [x] 未找到 ssh 命令。请在 Windows 设置中启用"OpenSSH 客户端"，
-  echo     或参考 部署指南.md 的方案二。
+  echo [x] ssh not found. Enable "OpenSSH Client" in Windows Settings,
+  echo     or see the deployment guide file.
   pause
   exit /b 1
 )
 
 if not exist "node_modules" (
-  echo [1/3] 首次运行，正在安装依赖（约 1 分钟）...
+  echo [1/3] Installing dependencies (first run)...
   call npm install
   echo.
 ) else (
-  echo [1/3] 依赖已就绪
+  echo [1/3] Dependencies ready
 )
 
-echo [2/3] 检查游戏服务器...
-curl -s -o nul --max-time 2 http://localhost:3000/health
+echo [2/3] Checking game server on port 3080...
+curl -s -o nul --max-time 2 http://localhost:3080/health
 if errorlevel 1 (
-  echo       未运行，正在启动（新窗口）...
-  start "小宝汤汤-游戏服务器" cmd /k "npm start"
-  timeout /t 4 /nobreak >nul
+  echo       Not running. Starting it (new window with auto-restart)...
+  start "Xiaobao Tangtang - Game Server" cmd /k "%~dp0server-watch.bat"
+  ping -n 5 127.0.0.1 >nul
 ) else (
-  echo       服务器已在运行
+  echo       Server is running
 )
 
-echo [3/3] 启动公网隧道（自动重连，网址自动保存到"当前游戏网址.txt"）
+echo [3/3] Starting public tunnel (auto-reconnect; latest URL saved to URL txt file)
 echo.
 echo ============================================================
-echo   稍等 5~10 秒，窗口里会出现 https://xxxx 网址；
-echo   同时会自动写入"当前游戏网址.txt"，随时双击查看。
-echo   把网址发给小伙伴即可异地联机！
+echo   In 5-10 seconds a public https URL will appear below.
+echo   The latest URL is also saved to the txt file in this
+echo   folder (double-click it anytime to view the URL).
+echo   Send that URL to your friend and play together!
 echo.
-echo   本窗口保持开着 = 公网在线；断线会自动重连。
-echo   重连后网址会变，以"当前游戏网址.txt"里的为准。
+echo   Keep this window open = stay online.
+echo   The URL changes after each reconnect; use the txt file.
 echo ============================================================
 echo.
 

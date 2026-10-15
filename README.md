@@ -32,10 +32,10 @@ npm start
 
 ```
   小宝汤汤爱闯关 - 服务已启动
-  本机游玩:   http://localhost:3000
+  本机游玩:   http://localhost:3080
 ```
 
-浏览器打开 <http://localhost:3000> 即可。
+浏览器打开 <http://localhost:3080> 即可。
 
 > 开发模式（文件改动自动重启）：`npm run dev`
 >
@@ -53,10 +53,10 @@ npm start
 ### 方式二：手机 + 电脑（同一 WiFi）
 
 1. 电脑启动服务后，按 `Win + R` 输入 `cmd` 回车，执行 `ipconfig`，找到「无线局域网适配器 WLAN」下的 **IPv4 地址**（如 `192.168.1.8`）；
-2. 手机连上**同一个 WiFi**，浏览器访问 `http://192.168.1.8:3000`（换成你的 IP）；
+2. 手机连上**同一个 WiFi**，浏览器访问 `http://192.168.1.8:3080`（换成你的 IP）；
 3. 一台手机创建房间，另一台（或电脑）加入房间。
 
-> 若手机访问不了：检查 Windows 防火墙是否放行了 Node.js（首次启动时弹窗选择「允许」），或到防火墙设置里手动放行 3000 端口。
+> 若手机访问不了：检查 Windows 防火墙是否放行了 Node.js（首次启动时弹窗选择「允许」），或到防火墙设置里手动放行 3080 端口。
 
 ### 方式三：异地联机（不同 WiFi / 不同城市）
 
@@ -102,11 +102,11 @@ Railway / Zeabur / 阿里云等任何支持 Node 的平台同理：
 
 ```bash
 npm install
-PORT=3000 npm start        # 或 set PORT=3000 && npm start（Windows）
+PORT=3080 npm start        # 或 set PORT=3080 && npm start（Windows）
 ```
 
-- 有公网 IP / 已备案域名：用 Nginx 反向代理 3000 端口（记得支持 WebSocket 升级头）；
-- 无公网：用 cpolar / 花生壳 / frp 等内网穿透工具把 3000 端口映射到公网。
+- 有公网 IP / 已备案域名：用 Nginx 反向代理 3080 端口（记得支持 WebSocket 升级头）；
+- 无公网：用 cpolar / 花生壳 / frp 等内网穿透工具把 3080 端口映射到公网。
 
 ## 🎮 操作说明
 

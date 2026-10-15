@@ -12,7 +12,7 @@ const { Server } = require('socket.io');
 const { RoomManager } = require('./roomManager');
 const gameHandler = require('./gameHandler');
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3080;
 const app = express();
 
 // 健康检查（部署平台探活用）
