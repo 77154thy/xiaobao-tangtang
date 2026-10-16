@@ -1,0 +1,13 @@
+{
+  "name": "小宝汤汤爱闯关",
+  "image": "mcr.microsoft.com/devcontainers/javascript-node:20",
+  "postStartCommand": "npm install --no-audit --no-fund && (pgrep -f 'node server/index.js' >/dev/null || (nohup node server/index.js > /tmp/xbt-server.log 2>&1 &))",
+  "forwardPorts": [3080],
+  "portsAttributes": {
+    "3080": {
+      "label": "小宝汤汤爱闯关",
+      "visibility": "public",
+      "onAutoForward": "silent"
+    }
+  }
+}

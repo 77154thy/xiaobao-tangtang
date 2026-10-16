@@ -43,9 +43,9 @@
     for (let i = 0; i < n; i++) L.gems.push({ x: x + 1.5 + i * 1.2, y: 14.6 });
   };
 
-  // 缺口坑：底下是火/水/毒液或深渊，宽度 2~4（可跳过）
+  // 缺口坑：底下是火/水/毒液或深渊，宽度 2~3（轻松可跳过）
   D.gap = (L, rng, x, w) => {
-    const pw = Math.min(w - 2, ri(rng, 2, 4));
+    const pw = Math.min(w - 2, ri(rng, 2, 3));
     const px = x + Math.floor((w - pw) / 2);
     cutPit(L, px, pw);
     const kind = pick(rng, ['fire', 'water', 'toxic']);
@@ -74,25 +74,25 @@
     L.gems.push({ x: mx + 0.5, y: 16 - hgt - 0.8 });
   };
 
-  // 双色池：火池 + 水池并排——小宝趟火、汤汤趟水，各自跳过致命的那一池
+  // 双色池：火池 + 水池，中间留 2 格落脚地——小宝趟火跳水池、汤汤跳火池趟水
   D.pools = (L, rng, x, w) => {
-    const pw = Math.min(2, Math.floor((w - 3) / 2));
-    if (pw < 2) { D.gap(L, rng, x, w); return; }
+    if (w < 8) { D.gap(L, rng, x, w); return; } // 宽度不够时退化为普通坑
+    const pw = 2;
     cutPit(L, x + 1, pw);
     L.liquids.push({ x: x + 1, y: 16, w: pw, h: 2, kind: 'fire' });
-    cutPit(L, x + 2 + pw, pw);
-    L.liquids.push({ x: x + 2 + pw, y: 16, w: pw, h: 2, kind: 'water' });
+    cutPit(L, x + 3 + pw, pw); // 中间 2 格安全地
+    L.liquids.push({ x: x + 3 + pw, y: 16, w: pw, h: 2, kind: 'water' });
     L.gems.push({ x: x + 1 + pw / 2, y: 14.4 });
-    L.gems.push({ x: x + 2 + pw + pw / 2, y: 14.4 });
+    L.gems.push({ x: x + 3 + pw + pw / 2, y: 14.4 });
   };
 
-  // 移动平台：宽坑(5~7)上左右往返的平台
+  // 移动平台：宽坑(≤5格)上左右往返的大平台，看准时机跳上去
   D.moverGap = (L, rng, x, w) => {
-    const pw = w - 2;
+    const pw = Math.min(w - 2, 5);
     cutPit(L, x + 1, pw);
     L.liquids.push({ x: x + 1, y: 16, w: pw, h: 2, kind: pick(rng, ['toxic', 'water', 'fire']) });
     L.movers.push({
-      x: x + 2, y: 14, w: 2, dx: pw - 4, dy: 0,
+      x: x + 1.5, y: 14, w: 3, dx: Math.max(1, pw - 3), dy: 0,
       period: 2.6 + rng() * 1.2, phase: rng(),
     });
   };
@@ -226,9 +226,9 @@
     }
   };
 
-  // 双层深坑：两层的宽坑中间各有一块安全柱，需要「两段跳」配合通过
+  // 双层深坑：两层的坑中间各有一块安全柱，需要「两段跳」配合通过
   S.gapDeep = (L, rng, x, w) => {
-    const pw = Math.min(w - 2, ri(rng, 5, 6));
+    const pw = Math.min(w - 2, ri(rng, 4, 5));
     const px = x + Math.floor((w - pw) / 2);
     L.pits.push([px, pw]);
     L.liquids.push({ x: px, y: 16, w: pw, h: 2, kind: 'toxic' });
@@ -253,7 +253,7 @@
     L.gems.push({ x: sx + sw / 2, y: 6.4 });
   };
 
-  // 双层移动平台：同相位左右往返，一起搭车
+  // 双层移动平台：同相位左右往返的大平台，一起搭车
   S.mover = (L, rng, x, w) => {
     const pw = w - 2;
     L.pits.push([x + 1, pw]);
@@ -261,8 +261,8 @@
     L.topPits.push([x + 1, pw]);
     L.spikes.push({ x: x + 1, y: 10, w: pw, h: 1, period: 0, phase: 0, lane: 'top' });
     const period = 3.0 + rng();
-    L.movers.push({ x: x + 2, y: 15, w: 2, dx: pw - 4, dy: 0, period, phase: 0 });
-    L.movers.push({ x: x + 2, y: 8, w: 2, dx: pw - 4, dy: 0, period, phase: 0 });
+    L.movers.push({ x: x + 2, y: 15, w: 3, dx: Math.max(1, pw - 4), dy: 0, period, phase: 0 });
+    L.movers.push({ x: x + 2, y: 8, w: 3, dx: Math.max(1, pw - 4), dy: 0, period, phase: 0 });
   };
 
   // 双层碎裂平台：同相位碎裂桥，谁也别停留
