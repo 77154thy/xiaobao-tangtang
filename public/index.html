@@ -22,13 +22,15 @@
       <h1 class="logo">🔥 小宝汤汤 <span>爱闯关</span> 💧</h1>
       <p class="slogan">双人联机 · 心有灵犀 · 一起闯关到终点！</p>
       <input id="nickname" maxlength="12" placeholder="给自己起个名字（最多 12 字）" autocomplete="off" />
+      <button id="btn-local" class="btn local-btn big">🎮 单机双人 · 同屏零延迟</button>
+      <div class="divider"><span>或 联机对战（同一WiFi / 异地）</span></div>
       <button id="btn-create" class="btn primary big">🏠 创建房间</button>
       <div class="join-row">
         <input id="room-code-input" maxlength="4" placeholder="房间号" autocomplete="off" />
         <button id="btn-join" class="btn primary">🚪 加入房间</button>
       </div>
-      <p class="tip">创建房间后，把 4 位房间号告诉小伙伴，加入即可一起玩～<br />
-        两人可以在不同地方联机（需要部署到公网，见 README）。</p>
+      <p class="tip">单机双人：一台电脑/平板两人同屏玩，完全零延迟、无需联网。<br />
+        联机：创建房间把 4 位房间号告诉小伙伴；同一 WiFi 下两台设备直接访问电脑 IP（如 http://192.168.x.x:3080）延迟几乎为零。</p>
     </div>
   </div>
 
@@ -92,10 +94,18 @@
         <button id="btn-exit-game" title="退出">✖</button>
       </div>
 
-      <!-- 触屏虚拟按键 -->
+      <!-- 触屏虚拟按键（联机模式） -->
       <div class="touch-btn" id="btn-left">◀</div>
       <div class="touch-btn" id="btn-right">▶</div>
       <div class="touch-btn jump" id="btn-jump">⬆</div>
+
+      <!-- 触屏分区按键（单机双人：左半区=P1小宝，右半区=P2汤汤） -->
+      <div class="touch-btn lbtn" id="p1-left">◀</div>
+      <div class="touch-btn lbtn" id="p1-right">▶</div>
+      <div class="touch-btn lbtn jump" id="p1-jump">⬆</div>
+      <div class="touch-btn lbtn" id="p2-left">◀</div>
+      <div class="touch-btn lbtn" id="p2-right">▶</div>
+      <div class="touch-btn lbtn jump" id="p2-jump">⬆</div>
     </div>
 
     <!-- 结算浮层 -->
@@ -131,8 +141,24 @@
     </div>
   </div>
 
-  <!-- 全局提示 -->
-  <div id="toast"></div>
+    <!-- 单机双人选择浮层 -->
+    <div class="overlay" id="overlay-local">
+      <div class="picker-card">
+        <div class="picker-head">
+          <h3>🎮 单机双人 · 同屏游玩</h3>
+          <button id="btn-close-local" class="btn small">✖ 关闭</button>
+        </div>
+        <div class="local-modes">
+          <button id="local-dual" class="btn mode-btn on">双侠同行<small>各自控制自己的角色</small></button>
+          <button id="local-sync" class="btn mode-btn">心有灵犀<small>P1管方向 · P2管跳跃</small></button>
+        </div>
+        <p class="mode-desc" id="local-desc"></p>
+        <div id="local-grid" class="picker-grid"></div>
+      </div>
+    </div>
+
+    <!-- 全局提示 -->
+    <div id="toast"></div>
 
   <!-- 依赖：socket.io 客户端由服务端自动提供 -->
   <script src="/socket.io/socket.io.js"></script>

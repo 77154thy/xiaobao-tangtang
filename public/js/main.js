@@ -8,6 +8,8 @@
   const net = XBT.net;
 
   const STEP = 1 / 60;
+  const LOCAL_WIN_MSG = '恭喜小宝和汤汤闯关成功，小宝真棒，加油下一关~';
+  const LOCAL_FINAL_MSG = '恭喜小宝和汤汤通关了全部关卡！你们是最默契的搭档！';
   const app = {
     nickname: localStorage.getItem('xbt_nickname') || '',
     myIdx: 0,
@@ -15,6 +17,8 @@
     game: null,
     renderer: null,
     input: null,
+    local: false,      // 单机双人（同屏）模式
+    localInputs: null,
     mode: 'dual',
     duties: { moverIdx: 0, jumperIdx: 1 },
     level: 1,
@@ -45,7 +49,9 @@
   /* ================= 页面流转 ================= */
 
   function resetToHome(msg) {
-    net.leaveRoom();
+    if (!app.local) net.leaveRoom();
+    app.local = false;
+    document.body.classList.remove('local-mode', 'local-sync');
     app.room = null;
     app.game = null;
     clearInterval(snapTimer);
@@ -76,7 +82,30 @@
       XBT.audio.play('click');
       net.joinRoom(code, app.nickname);
     };
+    $('#btn-local').onclick = () => {
+      XBT.audio.play('click');
+      openLocalPicker();
+    };
+    $('#btn-close-local').onclick = closeLocalPicker;
+    $('#local-dual').onclick = () => { localMode = 'dual'; openLocalPicker(); };
+    $('#local-sync').onclick = () => { localMode = 'sync'; openLocalPicker(); };
   }
+
+  // —— 单机双人（同屏零延迟） ——
+  let localMode = 'dual';
+  function openLocalPicker() {
+    $('#local-dual').classList.toggle('on', localMode === 'dual');
+    $('#local-sync').classList.toggle('on', localMode === 'sync');
+    $('#local-desc').textContent = localMode === 'dual'
+      ? '键盘：小宝 WASD 移动跳跃，汤汤 方向键移动、↑/空格跳跃 ｜ 触屏：屏幕左半区=小宝，右半区=汤汤'
+      : '小宝管方向（A/D 或左半区◀▶），汤汤管跳跃（W/↑/空格 或右半区⬆）——两个角色同步移动';
+    XBT.ui.buildLevelPicker($('#local-grid'), localMode, 1, (lv) => {
+      closeLocalPicker();
+      startLocalGame(localMode, lv);
+    });
+    $('#overlay-local').classList.add('show');
+  }
+  function closeLocalPicker() { $('#overlay-local').classList.remove('show'); }
 
   // —— 等待房间 ——
   function bindRoom() {
@@ -130,15 +159,72 @@
     };
     $('#btn-next').onclick = () => {
       clearTimeout(app.settleTimeout);
-      if (isHost()) net.selectLevel(app.nextLevel || app.level + 1, 'next');
+      if (app.local) startLocalGame(app.mode, app.nextLevel || app.level + 1);
+      else if (isHost()) net.selectLevel(app.nextLevel || app.level + 1, 'next');
     };
     $('#btn-replay').onclick = () => {
       clearTimeout(app.settleTimeout);
-      if (isHost()) net.selectLevel(app.level, 'replay');
+      if (app.local) startLocalGame(app.mode, app.level);
+      else if (isHost()) net.selectLevel(app.level, 'replay');
     };
-    $('#btn-pick-settle').onclick = () => { clearTimeout(app.settleTimeout); openPicker('settle'); };
+    $('#btn-pick-settle').onclick = () => {
+      clearTimeout(app.settleTimeout);
+      if (app.local) openLocalPicker(); else openPicker('settle');
+    };
     $('#btn-back-room').onclick = () => resetToHome('已回到首页');
     $('#btn-close-picker').onclick = closePicker;
+  }
+
+  // ================= 单机双人（同屏零延迟） =================
+  // 不经过任何服务器：本地生成关卡、本地模拟、本地结算。
+
+  function startLocalGame(mode, level) {
+    app.local = true;
+    app.mode = mode;
+    app.level = level;
+    app.duties = { moverIdx: 0, jumperIdx: 1 };
+    app.completeSent = false;
+    clearTimeout(app.settleTimeout);
+    hideSettle();
+    closePicker();
+    closeLocalPicker();
+    net.setSession(null); // 清除可能残留的联机重连凭证，避免自动重连打断本地游戏
+
+    const data = XBT.genLevel(mode, level);
+    app.game = XBT.createGame(data, { myIdx: 0, mode, duties: app.duties });
+    if (!app.renderer) app.renderer = XBT.createRenderer(canvas);
+    app.renderer.resize();
+    app.levelStartTime = performance.now();
+
+    if (!app.localInputs) {
+      app.localInputs = XBT.createLocalInputs();
+      app.localInputs.bind();
+    }
+    app.localInputs.setVisible(mode);
+    document.body.classList.add('local-mode');
+    document.body.classList.toggle('local-sync', mode === 'sync');
+
+    showScreen('game');
+    $('#btn-mute').textContent = XBT.audio.muted ? '🔇' : '🔊';
+    toast(data.hint, 3500);
+  }
+
+  function localComplete(g) {
+    const timeMs = Math.max(0, performance.now() - app.levelStartTime);
+    saveBest(app.mode, app.level, timeMs);
+    const isFinal = app.level >= XBT.LEVELS_PER_MODE;
+    const next = isFinal ? app.level : app.level + 1;
+    app.nextLevel = next;
+    XBT.ui.showSettle({
+      level: app.level,
+      timeMs,
+      gems: { p0: g.gemBy[0], p1: g.gemBy[1] },
+      msg: isFinal ? LOCAL_FINAL_MSG : LOCAL_WIN_MSG,
+      isFinal,
+      nextLevel: next,
+    }, { isHost: true, gemTotal: g.rawLevel.gemTotal, timer: app.settleTimer });
+    clearTimeout(app.settleTimeout);
+    if (!isFinal) app.settleTimeout = setTimeout(() => startLocalGame(app.mode, next), 5200);
   }
 
   /* ================= 关卡启动与主循环 ================= */
@@ -146,6 +232,8 @@
   const canvas = $('#game-canvas');
 
   function startLevel(mode, level, duties) {
+    app.local = false;
+    document.body.classList.remove('local-mode', 'local-sync');
     app.mode = mode;
     app.level = level;
     app.duties = duties;
@@ -183,12 +271,12 @@
 
   // 输入上报：变化即发 + 50ms 心跳，保证对手端最迟 50ms 收到
   function sendInputNow() {
-    if (!app.game || !net.connected) return;
+    if (app.local || !app.game || !net.connected) return;
     app.game.setMyInput(app.input.state); // 本机模拟零延迟：直接写本地
     net.sendInput({ seq: app.inputSeq++, ...app.input.state });
   }
   const inputTimer = setInterval(() => {
-    if (app.game && document.getElementById('screen-game').classList.contains('active')) sendInputNow();
+    if (!app.local && app.game && document.getElementById('screen-game').classList.contains('active')) sendInputNow();
   }, 50);
 
   /**
@@ -201,7 +289,12 @@
     const now = performance.now();
     if (now - (app.lastSimAt || 0) < 120) return; // rAF 正常在跑，无需兜底
     const elapsed = Math.min(1, (now - (app.lastSimAt || now)) / 1000);
-    app.game.setMyInput(app.input.state);
+    if (app.local) {
+      app.game.setMyInput(app.localInputs.p1);
+      app.game.setPeerInput(app.localInputs.p2);
+    } else {
+      app.game.setMyInput(app.input.state);
+    }
     const n = Math.min(60, Math.round(elapsed / STEP));
     for (let i = 0; i < n; i++) app.game.step(STEP);
     const evs = app.game.events.splice(0, app.game.events.length);
@@ -212,7 +305,7 @@
 
   // 房主快照：每 500ms 广播一次，供客人校正漂移
   const snapTimer = setInterval(() => {
-    if (app.game && app.myIdx === 0 && document.getElementById('screen-game').classList.contains('active')) {
+    if (!app.local && app.game && app.myIdx === 0 && document.getElementById('screen-game').classList.contains('active')) {
       net.sendSnapshot({
         t: app.game.t,
         chars: app.game.chars.map((c) => ({ x: Math.round(c.x), y: Math.round(c.y) })),
@@ -232,7 +325,7 @@
         case 'spring': XBT.audio.play('spring'); break;
         case 'death':
           XBT.audio.play('death');
-          if (ev.idx === app.myIdx) net.notifyDied(g.t);
+          if (!app.local && ev.idx === app.myIdx) net.notifyDied(g.t);
           break;
         case 'respawn': XBT.audio.play('respawn'); break;
         case 'enterExit':
@@ -242,11 +335,15 @@
         case 'complete':
           if (!app.completeSent) {
             app.completeSent = true;
-            net.levelComplete({
-              level: app.level,
-              timeMs: performance.now() - app.levelStartTime,
-              gems: { p0: g.gemBy[0], p1: g.gemBy[1] },
-            });
+            if (app.local) {
+              localComplete(g); // 本地结算，不经服务器
+            } else {
+              net.levelComplete({
+                level: app.level,
+                timeMs: performance.now() - app.levelStartTime,
+                gems: { p0: g.gemBy[0], p1: g.gemBy[1] },
+              });
+            }
           }
           break;
       }
@@ -259,13 +356,19 @@
     const dt = Math.min(0.1, (now - (raf.last || now)) / 1000);
     raf.last = now;
     if (!app.game || !document.getElementById('screen-game').classList.contains('active')) return;
-    app.game.setMyInput(app.input.state); // 本机输入 → 本地模拟（对手输入由网络事件写入）
+    if (app.local) {
+      // 本地双人：P1/P2 两份输入直接写入本地模拟
+      app.game.setMyInput(app.localInputs.p1);
+      app.game.setPeerInput(app.localInputs.p2);
+    } else {
+      app.game.setMyInput(app.input.state); // 本机输入 → 本地模拟（对手输入由网络事件写入）
+    }
     let acc = dt, steps = 0;
     while (acc >= STEP && steps < 5) { app.game.step(STEP); acc -= STEP; steps++; }
     app.lastSimAt = now; // 供兜底模拟器判断 rAF 是否活跃
     const evs = app.game.events.splice(0, app.game.events.length);
     handleGameEvents(evs);
-    app.renderer.draw(app.game, dt, { myIdx: app.myIdx, names: names(), events: evs });
+    app.renderer.draw(app.game, dt, { myIdx: app.local ? -1 : app.myIdx, names: names(), events: evs });
     // HUD 节流刷新
     if (!raf.hudT || now - raf.hudT > 200) {
       raf.hudT = now;
@@ -274,9 +377,13 @@
         time: ((now - app.levelStartTime) / 1000).toFixed(1) + 's',
         gems: `${app.game.gemBy[0] + app.game.gemBy[1]}/${app.game.rawLevel.gemTotal}`,
         mode: app.mode,
+        modeText: app.local
+          ? XBT.MODE_LABEL[app.mode] + (app.mode === 'sync' ? ' · P1方向/P2跳跃' : ' · P1小宝/P2汤汤')
+          : null,
         duty: app.mode === 'sync' ? (myDuty() === 'mover' ? '方向手' : '跳跃手')
           : (app.myIdx === 0 ? '小宝' : '汤汤'),
         ping: app.ping,
+        hidePing: app.local,
       });
     }
   };

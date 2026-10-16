@@ -134,7 +134,9 @@
     $('#hud-time').textContent = info.time;
     $('#hud-gems').textContent = `💎 ${info.gems}`;
     $('#hud-ping').textContent = info.ping != null ? `${info.ping}ms` : '--';
-    $('#hud-mode').textContent = XBT.MODE_LABEL[info.mode] + (info.duty ? `·你是${info.duty}` : '');
+    $('#hud-ping').style.display = info.hidePing ? 'none' : '';
+    $('#hud-mode').textContent = info.modeText
+      || (XBT.MODE_LABEL[info.mode] + (info.duty ? `·你是${info.duty}` : ''));
   }
 
   XBT.ui = {

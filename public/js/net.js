@@ -24,6 +24,11 @@
 
   function connect() {
     if (socket) return socket;
+    // 以 file:// 方式直接双击打开页面时没有 socket.io，静默降级为单机模式
+    if (typeof io === 'undefined') {
+      console.warn('[net] socket.io 不可用（单机模式），联机功能已禁用');
+      return null;
+    }
     socket = io({ // 同源连接；拆分部署时可传入后端地址
       reconnection: true,
       reconnectionDelay: 600,
@@ -71,8 +76,8 @@
   XBT.net = {
     connect, on,
     get connected() { return !!(socket && socket.connected); },
-    createRoom(nickname) { connect().emit('createRoom', { nickname }); },
-    joinRoom(roomCode, nickname) { connect().emit('joinRoom', { roomCode, nickname }); },
+    createRoom(nickname) { const s = connect(); s && s.emit('createRoom', { nickname }); },
+    joinRoom(roomCode, nickname) { const s = connect(); s && s.emit('joinRoom', { roomCode, nickname }); },
     setReady(ready) { socket && socket.emit('playerReady', { ready }); },
     changeMode(mode) { socket && socket.emit('changeMode', { mode }); },
     swapDuty() { socket && socket.emit('swapDuty'); },
