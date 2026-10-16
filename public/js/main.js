@@ -89,6 +89,21 @@
     $('#btn-close-local').onclick = closeLocalPicker;
     $('#local-dual').onclick = () => { localMode = 'dual'; openLocalPicker(); };
     $('#local-sync').onclick = () => { localMode = 'sync'; openLocalPicker(); };
+    // 首页显示「同一 WiFi/热点」联机地址（服务器自动检测本机局域网 IP）
+    fetch('/api/lan').then((r) => r.json()).then((d) => {
+      const el = $('#lan-hint');
+      if (!el || !d.ips || !d.ips.length) return;
+      const urls = d.ips.map((ip) => `http://${ip}:${d.port}`).join('　或　');
+      el.innerHTML = `📶 <b>两台设备联机（同一 WiFi / 手机热点）</b><br />` +
+        `在<b>另一台设备</b>的浏览器打开：<code>${urls}</code><br />` +
+        `各自建房/加入房间即可 —— 数据只在局域网内传输，延迟几乎为零。（点此复制地址）`;
+      el.style.display = 'block';
+      el.onclick = () => {
+        const text = d.ips.map((ip) => `http://${ip}:${d.port}`).join(' ');
+        if (navigator.clipboard) navigator.clipboard.writeText(text).then(() => toast('地址已复制：' + text));
+        else toast('地址：' + text);
+      };
+    }).catch(() => { /* 单机模式（file://）下没有此接口，忽略 */ });
   }
 
   // —— 单机双人（同屏零延迟） ——
